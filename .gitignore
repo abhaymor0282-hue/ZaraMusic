@@ -1,0 +1,7 @@
+cookies.txt
+.env
+*.json
+downloads/
+*.session
+__pycache__/
+log.txt
