@@ -4,8 +4,8 @@ import core as _core, player as _player
 globals().update({k: v for _m in (_core, _player) for k, v in vars(_m).items() if not k.startswith("__")})
 
 
-import plugins
-plugins.load_all()
+import plugin
+plugin.load_all()
 
 
 async def main():
