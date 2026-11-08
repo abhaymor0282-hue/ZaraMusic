@@ -1,1 +1,10 @@
-
+kurigram
+tgcrypto
+py-tgcalls>=2.0,<3.0
+aiohttp
+requests
+yt_dlp
+psutil
+pymongo[srv]
+pillow
+shazamio
