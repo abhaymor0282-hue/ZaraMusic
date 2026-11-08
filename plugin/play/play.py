@@ -154,6 +154,55 @@ async def forceplay(_, m):
     except Exception as e:
         return await msg.edit_text(play_fail_text(e))
     try:
+        await msg.delete()     
+    # the Streaming card was already sent by send_card
+    except Exception:
+        pass
+@bot.on_message(filters.command(["playforce", "cplayforce", "vplayforce", "vcplayforce"]) & filters.group)
+async def playforce(_, m):
+    name = m.command[0].lower()
+    channel = name in ("cplayforce", "vcplayforce")
+    video = name in ("vplayforce", "vcplayforce")
+    if not await can_control(m):
+        return await m.reply_text(NOT_AUTH)
+    if len(m.command) < 2:
+        media = replied_media(m)
+        if media:
+            return await play_telegram_media(m, media, channel, video, force=True)
+        return await m.reply_text(f"υѕαɢє: /{name} <ѕσηɢ ηαϻє σʀ ʟɪηᴋ>\nσʀ ʀєᴘʟʏ ᴛσ αη ᴀυᴅɪσ / ᴠσɪᴄє / ᴠɪᴅєσ ωɪᴛн /{name}")
+    pid = target(m, channel)
+    if not pid:
+        return await m.reply_text(NO_CHANNEL)
+    query = " ".join(m.command[1:])
+    loop = asyncio.get_running_loop()
+    msg_f = asyncio.ensure_future(m.reply_text("💗"))
+    join_f = asyncio.ensure_future(ensure_assistant(pid))
+    search_f = loop.run_in_executor(None, search, query)
+    lid = re.search(r"(?:v=|youtu\.be/|shorts/)([\w-]{11})", query)
+    if lid:
+        prefetch(f"https://www.youtube.com/watch?v={lid.group(1)}", video)
+    try:
+        meta = await search_f
+    except Exception as e:
+        join_f.cancel()
+        msg = await msg_f
+        return await msg.edit_text(f" Not found: {e}")
+    prefetch(meta["link"], video)
+    msg = await msg_f
+    try:
+        await join_f
+    except AssistantBanned:
+        return await reply_banned(msg, pid)
+    except Exception as e:
+        return await msg.edit_text(play_fail_text(e))
+    track = dict(meta, video=video, channel=channel, by=mention(m), by_id=uid(m), by_name=plain_name(m))
+    try:
+        await force_play(m.chat.id, pid, track)
+    except AssistantBanned:
+        return await reply_banned(msg, pid)
+    except Exception as e:
+        return await msg.edit_text(play_fail_text(e))
+    try:
         await msg.delete()                      # the Streaming card was already sent by send_card
     except Exception:
         pass
